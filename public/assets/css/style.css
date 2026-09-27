@@ -948,6 +948,19 @@ a.tag-pill:hover {
   color: var(--green-deep);
 }
 
+/* 页脚版权行：左边常规信息，右边同款小字的外站跳转 */
+.foot-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+}
+
+.site-foot .foot-row .foot-jump {
+  white-space: nowrap;
+}
+
 /* ---------- 其他 ---------- */
 
 .page-title {

@@ -22,6 +22,8 @@ export const site = {
   ],
   lang: 'zh-CN',
   author: 'Sylveris',
+  // 个人工具站，页脚留一个小跳转入口
+  homeSite: { name: '银叶集', url: 'https://sylveris.top' },
   icp: '', // 备案号，取得后填入即可出现在页脚
   builtAt: new Date().toISOString(),
 };
