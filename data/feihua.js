@@ -1,6 +1,5 @@
 // 废话文学馆内容。
 // 字段：slug、text（正文）、tags、date（收录日期）
-// 另有 generator.js 提供关键词生成废话的模板。
 
 export const feihua = [
   { slug: 'breathing-sixty-seconds', text: '每呼吸 60 秒，就减少一分钟寿命。', tags: ['经典'], date: '2026-09-26' },

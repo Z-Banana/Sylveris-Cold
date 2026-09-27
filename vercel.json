@@ -38,6 +38,8 @@
     }
   ],
   "redirects": [
+    { "source": "/random", "destination": "/facts/", "permanent": true },
+    { "source": "/random/", "destination": "/facts/", "permanent": true },
     { "source": "/fact/:slug", "destination": "/facts/:slug/", "permanent": true },
     { "source": "/joke", "destination": "/jokes/", "permanent": true },
     { "source": "/feihuawenxue", "destination": "/feihua/", "permanent": true }

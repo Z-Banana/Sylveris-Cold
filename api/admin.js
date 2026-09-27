@@ -8,6 +8,7 @@
  *
  * 读取：
  *   GET ?view=overview                 统计与今日/下一条
+ *   GET ?view=visits                   访问统计（近 30 天，按天 / 按板块）
  *   GET ?view=submissions&status=      投稿队列
  *   GET ?view=content&filter=&q=&offset=&limit=   内容库
  *   GET ?view=one&id=                  单条内容（编辑表单用）
@@ -34,6 +35,7 @@ import {
   getSetting,
   contentStats,
   todayItem,
+  visitStats,
 } from '../lib/db.mjs';
 import { parseImport } from '../lib/parse.mjs';
 import { verifyPassword, issueToken, checkAuth, loginLimited, recordLoginFailure, clearLoginFailures } from '../lib/auth.mjs';
@@ -125,6 +127,11 @@ export default async function handler(req, res) {
             siteFacts: site ? site.facts.length : 0,
           },
         });
+      }
+
+      if (view === 'visits') {
+        const v = await visitStats(addDays(today, -29), today, addDays(today, -1));
+        return res.status(200).json({ ok: true, visits: v });
       }
 
       if (view === 'submissions') {

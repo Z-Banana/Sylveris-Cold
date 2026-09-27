@@ -809,74 +809,6 @@ a.tag-pill:hover {
   max-width: var(--measure);
 }
 
-/* ---------- 废话生成 ---------- */
-
-.generator {
-  background: var(--bg-alt);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 30px 32px;
-}
-
-.generator .gen-form {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.generator .gen-form input {
-  flex: 1 1 260px;
-  padding: 11px 14px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  font-size: 16px;
-}
-
-.generator .gen-form input:focus {
-  outline: none;
-  border-color: var(--green);
-  background: #fff;
-}
-
-.gen-result {
-  margin-top: 22px;
-  min-height: 30px;
-  font-size: 19px;
-  line-height: 1.7;
-  color: var(--ink);
-}
-
-.gen-result:empty::before {
-  content: "输入一个词，生成一句没用的话。";
-  color: var(--ink-3);
-  font-size: 15.5px;
-  font-family: var(--sans);
-}
-
-.gen-tags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 14px;
-  font-family: var(--sans);
-  font-size: 13px;
-}
-
-.gen-tags button {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--blue-ink);
-  cursor: pointer;
-  border-bottom: 1px dashed var(--blue-soft);
-}
-
-.gen-tags button:hover {
-  color: var(--green-deep);
-  border-bottom-color: var(--green);
-}
-
 /* ---------- 搜索 ---------- */
 
 .search-box {
@@ -928,6 +860,15 @@ a.tag-pill:hover {
   margin: 0 0 18px;
   padding-left: 14px;
   border-left: 2px solid var(--green-soft);
+}
+
+/* 随机冷笑话：卡片内展开的全文 */
+.random-card .r-full {
+  color: var(--ink-2);
+  font-size: 16.5px;
+  line-height: 1.85;
+  max-width: var(--measure);
+  margin: -4px 0 6px;
 }
 
 .random-actions {
@@ -1151,8 +1092,7 @@ a.tag-pill:hover {
   }
 
   .daily,
-  .random-card,
-  .generator {
+  .random-card {
     padding: 26px 20px;
   }
 
@@ -1248,6 +1188,28 @@ a.tag-pill:hover {
   color: var(--ink);
   line-height: 1.5;
   word-break: break-word;
+}
+
+/* ---------- 访问统计 ---------- */
+
+.ad-two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 28px;
+  margin-top: 30px;
+}
+
+.ad-sub-h {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+  margin: 0 0 10px;
+}
+
+.ad-table-wrap {
+  overflow-x: auto;
 }
 
 .ad-notice {

@@ -8,6 +8,7 @@
  */
 
 import '../lib/env.mjs'; // 读取 .env：PORT / ADMIN_TEST_PASSWORD
+import { deleteSubmission } from '../lib/db.mjs'; // 投稿表没有删除接口，测试残留自己清
 
 const PORT = process.argv.slice(2).find((a) => /^\d+$/.test(a)) || process.env.PORT || '5173';
 const BASE = `http://localhost:${PORT}`;
@@ -62,8 +63,44 @@ const addDays = (d, n) => {
 const tomorrow = addDays(today, 1);
 
 const created = [];
+let subId = null; // 本次测试用的投稿记录 id
 const cleanup = async () => {
   for (const id of created) await api.post({ action: 'delete', id });
+};
+
+/** 分页取全部待上线内容（接口默认只给 50 条、单次最多 200 条） */
+const allQueued = async () => {
+  const out = [];
+  for (let offset = 0; offset <= 4000; offset += 200) {
+    const r = await api.get(`view=content&filter=queued&limit=200&offset=${offset}`);
+    out.push(...(r.rows || []));
+    if ((r.rows || []).length < 200) break;
+  }
+  return out;
+};
+
+// 快照线上排期：插队与「投稿通过」都会把 >= 明天的内容整体后移一天，测试结束必须拨回
+const scheduleBefore = new Map((await allQueued()).map((r) => [r.id, r.publish_at]));
+
+const restore = async () => {
+  const pending = [];
+  for (const row of await allQueued()) {
+    const orig = scheduleBefore.get(row.id);
+    if (orig && row.publish_at !== orig) pending.push([row.id, orig]);
+  }
+  let shifted = 0;
+  for (let i = 0; i < pending.length; i += 8) {
+    const res = await Promise.all(
+      pending.slice(i, i + 8).map(([id, publish_at]) => api.post({ action: 'update', id, fields: { publish_at } }))
+    );
+    shifted += res.filter((r) => r.json.ok).length;
+  }
+  const after = await allQueued();
+  ok(
+    '线上排期已还原（排期测试不留后移）',
+    after.every((r) => !scheduleBefore.has(r.id) || scheduleBefore.get(r.id) === r.publish_at),
+    `回拨 ${shifted} 条`
+  );
 };
 
 try {
@@ -76,8 +113,7 @@ try {
   const ins = await api.post({ action: 'import', text, dryRun: false, startDate: tomorrow });
   ok('导入 3 条（明天起）', ins.json.inserted === 3, `起=${ins.json.startDate}`);
 
-  const lib = await api.get('view=content&filter=queued');
-  const rows = (lib.rows || []).filter((r) => (r.body || '').includes('排期验证条目'));
+  const rows = (await allQueued()).filter((r) => (r.body || '').includes('排期验证条目'));
   for (const r of rows) created.push(r.id);
 
   const byBody = Object.fromEntries(rows.map((r) => [r.body.slice(0, 20), r]));
@@ -95,8 +131,7 @@ try {
   const j = await api.post({ action: 'jump', id: bing.id });
   ok('插队返回明天', j.json.publishAt === tomorrow, `publishAt=${j.json.publishAt}`);
 
-  const after = await api.get('view=content&filter=queued');
-  const rows2 = (after.rows || []).filter((r) => (r.body || '').includes('排期验证条目'));
+  const rows2 = (await allQueued()).filter((r) => (r.body || '').includes('排期验证条目'));
   const jia2 = rows2.find((r) => r.id === jia.id);
   const yi2 = rows2.find((r) => r.id === yi.id);
   const bing2 = rows2.find((r) => r.id === bing.id);
@@ -120,10 +155,11 @@ try {
   ok('投稿进入待审', Boolean(sub));
 
   if (sub) {
+    subId = sub.id;
     const ap = await api.post({ action: 'approve', id: sub.id });
     ok('通过后排在明天', ap.json.publishAt === tomorrow, `publishAt=${ap.json.publishAt}`);
 
-    const rows3 = (await api.get('view=content&filter=queued')).rows || [];
+    const rows3 = await allQueued();
     const reader = rows3.find((r) => r.body.includes('排期验证投稿'));
     if (reader) created.push(reader.id);
     const readerNext = rows3.filter((r) => (r.body || '').includes('排期验证条目'));
@@ -131,13 +167,20 @@ try {
     ok('原明天占位者（丙）顺延到后天',
       readerNext.find((r) => r.id === bing.id)?.publish_at === addDays(tomorrow, 1),
       readerNext.find((r) => r.id === bing.id)?.publish_at);
-    ok('队列无重复日期',
-      new Set(rows3.filter((r) => r.publish_at >= tomorrow).map((r) => r.publish_at)).size ===
-        rows3.filter((r) => r.publish_at >= tomorrow).length);
+    // 线上内容本来就有同一天多条（冷知 + 冷笑话同日），所以只校验测试排期自身连续无空档
+    const testDates = [
+      ...new Set(rows3.filter((r) => /排期验证/.test(String(r.body || ''))).map((r) => r.publish_at)),
+    ].sort();
+    const span = testDates.length
+      ? Math.round((new Date(testDates.at(-1) + 'T00:00:00Z') - new Date(testDates[0] + 'T00:00:00Z')) / 86400000) + 1
+      : 0;
+    ok('测试排期从明天起连续、无空档', testDates.length === span && testDates[0] === tomorrow, testDates.join(' , '));
   }
 } finally {
   await cleanup();
-  console.log(`\n测试数据已清理。`);
+  if (subId) await deleteSubmission(subId).catch(() => false); // 审核留下的测试投稿记录一并清掉
+  await restore();
+  console.log(`\n测试数据已清理，排期已还原。`);
 }
 
 console.log(`结果：${pass} 通过，${fail} 失败`);

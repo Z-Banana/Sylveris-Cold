@@ -3,7 +3,7 @@
 > cold.sylveris.top —— 一个安静的冷知识 / 冷笑话 / 废话文学站。
 > 简约小清新，纯中文，零外部 UI 库。
 
-**日常更新内容不需要重新构建。** 页面在请求时从数据库渲染，后台上传 AI 写好的文本文档即可自动排期上线。
+页面在请求时从数据库渲染，后台上传写好的文本文档即可自动排期上线。
 
 ---
 
@@ -15,7 +15,7 @@
 | 页面渲染 | `api/render.js` 动态渲染 | vercel.json rewrite 把页面请求转给它，数据取自数据库 |
 | 样式 | 手写 CSS（`public/assets/css/style.css`） | 无 Tailwind / 无组件库 |
 | 交互 | 原生 JS（`public/assets/js/site.js`） | 无 React / 无打包器 |
-| 存储 | Turso 免费版（云端）→ 本地 JSON 回落（本地） | 内容、排期、投稿、密码哈希 |
+| 存储 | Turso 免费版（云端）→ 本地 JSON 回落（本地） | 内容、排期、投稿、密码哈希、访问计数 |
 | 后台 | 隐藏路径 + scrypt 密码哈希 + HMAC 令牌 | 密码明文永不落库 |
 | 部署 | Vercel Hobby（免费） | 静态资源 + 函数一体 |
 | 应急 | `npm run build:static` | 一键切回全量静态站，脱离数据库也能跑 |
@@ -57,8 +57,8 @@
 │   ├── serve.mjs           # 本地服务（与云端同构：资源 + API + 渲染）
 │   ├── seed.mjs            # 把 data/*.js 灌进数据库（只跑一次）
 │   ├── set-password.mjs    # 设置/重置后台密码（只存哈希）
-│   ├── check.mjs           # 冒烟测试（49 项）
-│   ├── check-schedule.mjs  # 排期/插队语义测试（11 项）
+│   ├── check.mjs           # 冒烟测试（只读 43 项 / --admin 61 项）
+│   ├── check-schedule.mjs  # 排期/插队语义测试（12 项）
 │   └── make-icons.mjs      # 重新生成图标
 ├── dist/                   # 构建产物（git 忽略）
 ├── vercel.json             # Vercel 配置（含 rewrite）
@@ -79,7 +79,7 @@ npm run set-password -- 你的密码
 # 3. 启动本地服务 → http://localhost:5173
 npm run serve
 
-# 4. 后台：http://localhost:5173/linjian-7c4f/
+# 4. 后台：http://localhost:5173/admin-z-banana/（以 .env 的 ADMIN_PATH 为准）
 ```
 
 常用命令：
@@ -90,9 +90,9 @@ npm run serve
 | `npm run serve -- 5175` | 换端口启动（5173 被占用时用） |
 | `npm run set-password` | 设置/重置密码（`-- --check` 查看是否已设置） |
 | `npm run seed` | 首次把 `data/*.js` 导入数据库（已有内容会跳过） |
-| `npm run check` | 冒烟测试（页面、SEO 文件、后台全流程，共 49 项） |
-| `npm run check -- --admin` | 含后台导入/编辑/插队/审核全链路（跑完自动清理） |
-| `npm run check:schedule` | 排期/插队语义专项（11 项，跑完自动清理） |
+| `npm run check` | 冒烟测试（页面 / SEO / 后台隐藏 / 访问上报，只读 43 项） |
+| `npm run check -- --admin` | 后台全链路：导入 / 编辑 / 插队 / 审核（跑完自动清理并还原线上排期，61 项） |
+| `npm run check:schedule` | 排期/插队语义专项（12 项，跑完自动清理并还原排期） |
 | `npm run check:security` | 安全自检（13 项：明文不留存 / scrypt / 限流 / 令牌；跑完需重启服务清限流） |
 | `npm run check -- 5175` | 指定端口 |
 | `npm run build` | 只复制静态资源到 `dist/`（云端默认构建） |
@@ -188,7 +188,7 @@ Project → Settings → Domains → 添加 `cold.sylveris.top`，
 - 密码存的是 scrypt 哈希（随机盐），数据库里看不到明文；连续错 10 次锁 10 分钟。
 - 登录成功拿到 7 天有效的签名令牌，改密码会立刻让所有已登录会话失效。
 
-### 三个页签
+### 四个页签
 
 **① 上传导入**
 把 AI 写好的 `.txt` 或 `.json` 拖进来（或粘贴）→「解析预览」→ 检查识别结果和排期 →「确认入库」。
@@ -202,6 +202,12 @@ Project → Settings → Domains → 添加 `cold.sylveris.top`，
 **③ 投稿审核**
 访客投稿在这里；「通过（次日插队上线）」会自动占用次日槽位，
 并标记 `来自林间投稿`；「退回」不再展示。
+
+**④ 访问统计**
+今日 / 昨日 / 近 30 天访问次数，以及按天、按板块（首页、冷知、冷笑话……）的分布。
+数据由页面脚本每次加载时上报一次，服务端按「日期 + 板块」累加：
+**只记次数，不存 IP、不存 UA、不存任何可识别信息**，并已过滤已知爬虫；
+跨站 Origin 直接拒绝。后台页自己不上报，看后台不会把数字刷上去。
 
 ### 给 AI 的提示词模板
 
@@ -288,4 +294,4 @@ npm run serve:static     # 起服务验证：响应头 X-Serve 会变成 static
 - 动效仅保留：首屏淡入、按钮悬停变色；并遵循 `prefers-reduced-motion`。
 - 无积分、无排行、无弹窗、无深浅色切换、无 Emoji 装饰。
 - 投稿有蜜罐字段 + 频率限制（5 次 / 10 分钟 / IP）。
-- 冒烟测试：`npm run check` 49 项、`npm run check:schedule` 11 项、安全自检 13 项。
+- 验收：`npm run check -- --admin` 61 项、`npm run check:schedule` 12 项、`npm run check:security` 13 项，合计 **86 项**（`npm run check` 不加 `--admin` 是 43 项只读冒烟）。

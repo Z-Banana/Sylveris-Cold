@@ -1,5 +1,5 @@
 /* Sylveris 春林冷知 — 交互脚本
-   只做必要的事：导航、今日冷知、随机、筛选、废话生成、搜索、投稿。
+   只做必要的事：导航、今日冷知、随机（冷知 / 废话 / 冷笑话）、筛选、搜索、投稿、访问上报。
    不依赖任何外部库。 */
 
 (function () {
@@ -119,55 +119,83 @@
     });
   }
 
-  /* ---------- 废话生成器：关键词 + 模板，随机取一句 ---------- */
-  var genForm = document.getElementById('gen-form');
-  if (genForm) {
-    var TEMPLATES = [
-      '如果你是{w}，那你就是{w}。',
-      '每提到一次{w}，就离{w}更近了一点。',
-      '{w}之所以是{w}，就因为它是{w}。',
-      '据不完全统计，{w}的统计并不完全。',
-      '只要{w}足够{w}，{w}就能达到{w}的程度。',
-      '关于{w}这件事，知道的人知道，不知道的人不知道。',
-      '如果{w}不是{w}，那它就不是{w}。',
-      '听懂{w}的人，已经听懂了{w}。',
-      '你和{w}之间，只差一个{w}。',
-      '今天的{w}，确实还是今天的{w}。',
-      '问题不在于{w}有没有问题，而在于{w}就在这里。',
-      '{w}这个东西，有和没有是一样的，就看它在不在。',
-      '三天之内，{w}会度过{w}的三天。',
-      '众所周知，{w}是知道的人都知道的。',
-    ];
-    var HINTS = ['天气', '上班', '周末', '睡觉', '吃饭', '开会', '摸鱼'];
-    var result = document.getElementById('gen-result');
-    var input = document.getElementById('gen-word');
+  /* ---------- 随机小工具：废话、冷笑话共用 ---------- */
+  function makeRandom(boxId, btnId, listName, apply) {
+    var box = document.getElementById(boxId);
+    if (!box) return;
+    var btn = document.getElementById(btnId);
+    var last = null;
 
-    function generate(word) {
-      var w = (word || '').trim();
-      if (!w) {
-        w = HINTS[Math.floor(Math.random() * HINTS.length)];
-        if (input) input.value = w;
-      }
-      if (w.length > 12) w = w.slice(0, 12);
-      var tpl = TEMPLATES[Math.floor(Math.random() * TEMPLATES.length)];
-      if (result) result.textContent = tpl.split('{w}').join(w);
-    }
-
-    genForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      generate(input ? input.value : '');
-    });
-
-    var hintBox = document.getElementById('gen-hints');
-    if (hintBox) {
-      hintBox.addEventListener('click', function (e) {
-        var b = e.target.closest('button[data-w]');
-        if (!b) return;
-        if (input) input.value = b.getAttribute('data-w');
-        generate(b.getAttribute('data-w'));
+    function pick() {
+      loadData(function (data) {
+        var list = data[listName] || [];
+        if (!list.length) return;
+        var item = list[Math.floor(Math.random() * list.length)];
+        if (list.length > 1) {
+          var guard = 0;
+          while (item === last && guard++ < 8) {
+            item = list[Math.floor(Math.random() * list.length)];
+          }
+        }
+        last = item;
+        apply(box, item);
       });
     }
+
+    if (btn) btn.addEventListener('click', pick);
+    pick();
   }
+
+  /* ---------- 随机废话 ---------- */
+  makeRandom('feihua-card', 'feihua-btn', 'feihua', function (box, h) {
+    var t = box.querySelector('.r-fact');
+    var m = box.querySelector('.r-meta');
+    if (t) t.textContent = h.text;
+    if (m) {
+      m.textContent = h.tags && h.tags.length ? h.tags.join(' / ') : '';
+    }
+  });
+
+  /* ---------- 随机冷笑话：展开全文在卡片内部展开，不跳走 ---------- */
+  var jokeExpand = document.getElementById('joke-expand');
+  if (jokeExpand) {
+    jokeExpand.addEventListener('click', function () {
+      var full = document.getElementById('joke-full');
+      if (!full) return;
+      var willOpen = full.hidden;
+      full.hidden = !willOpen;
+      jokeExpand.textContent = willOpen ? '收起全文' : '展开全文';
+      jokeExpand.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
+  }
+
+  makeRandom('joke-card', 'joke-btn', 'jokes', function (box, j) {
+    var t = box.querySelector('.r-fact');
+    var s = box.querySelector('.r-feihua');
+    var m = box.querySelector('.r-meta');
+    var f = box.querySelector('.r-full');
+    if (t) t.textContent = j.title;
+    if (s) s.textContent = j.line || '';
+    if (m) {
+      m.textContent = j.cat || '';
+    }
+    if (f) {
+      f.textContent = j.full || '';
+      if (j.fromReader) {
+        f.appendChild(document.createElement('br'));
+        var flag = document.createElement('span');
+        flag.className = 'reader-flag';
+        flag.style.fontSize = '13px';
+        flag.textContent = '来自林间投稿';
+        f.appendChild(flag);
+      }
+      f.hidden = true; // 换一条后收起，按钮复位
+    }
+    if (jokeExpand) {
+      jokeExpand.textContent = '展开全文';
+      jokeExpand.setAttribute('aria-expanded', 'false');
+    }
+  });
 
   /* ---------- 搜索：结果页纯列表 ---------- */
   var searchForm = document.getElementById('search-form');
@@ -309,5 +337,25 @@
           show('网络不通，提交失败，请稍后再试。', false);
         });
     });
+  }
+
+  /* ---------- 访问上报：后台「访问统计」的数据来源 ----------
+     只发「路径」和是否 404，服务端按天 + 板块累加，不存 IP、不存任何个人信息。
+     后台页（#ad-app）不上报，避免自己看后台把数字刷上去。 */
+  if (!document.getElementById('ad-app') && typeof fetch === 'function') {
+    try {
+      // 404 页的特征是 noindex（正常页面是 index,follow），据此把「没找到」单独归一类
+      var robotsMeta = document.querySelector('meta[name="robots"]');
+      var isNoindex = robotsMeta && /noindex/i.test(robotsMeta.getAttribute('content') || '');
+      fetch('/api/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: location.pathname, nf: isNoindex ? 1 : 0 }),
+        keepalive: true,
+        credentials: 'same-origin',
+      });
+    } catch (e) {
+      /* 上报失败不影响浏览 */
+    }
   }
 })();

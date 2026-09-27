@@ -28,7 +28,6 @@ import {
   renderFactPage,
   renderFeihua,
   renderJokes,
-  renderRandom,
   renderArchive,
   renderSearch,
   renderAbout,
@@ -147,7 +146,7 @@ async function buildStatic() {
 
   emit('feihua/index.html', renderFeihua(ctx));
   emit('jokes/index.html', renderJokes(ctx));
-  emit('random/index.html', renderRandom(ctx));
+  // /random/ 不再是独立页（随机冷知已并入 /facts/ 顶部，云端用 301 跳转）
   emit('archive/index.html', renderArchive(ctx));
   emit('search/index.html', renderSearch(ctx));
   emit('about/index.html', renderAbout(ctx));

@@ -196,6 +196,7 @@ async function handleApi(req, res, urlPath, url) {
     '/api/submit': 'api/submit.js',
     '/api/admin': 'api/admin.js',
     '/api/render': 'api/render.js',
+    '/api/visit': 'api/visit.js',
   };
   const file = map[urlPath];
   if (!file) {

@@ -5,7 +5,8 @@
  *   /                        首页
  *   /facts/  /facts/page/N/  冷知列表
  *   /facts/<slug>/           冷知详情
- *   /feihua/ /jokes/ /random/ /archive/ /search/ /about/ /submit/
+ *   /feihua/ /jokes/ /archive/ /search/ /about/ /submit/
+ *   /random/                  301 → /facts/（随机冷知已并入列表页顶部）
  *   /sitemap.xml /rss.xml /robots.txt /data/index.json
  *   <ADMIN_PATH>             隐藏管理台（no-store）
  *   其余                      404 页（状态码 404）
@@ -22,7 +23,6 @@ import {
   renderFactPage,
   renderFeihua,
   renderJokes,
-  renderRandom,
   renderArchive,
   renderSearch,
   renderAbout,
@@ -60,8 +60,24 @@ export default async function handler(req, res) {
   raw = raw.replace(/\/{2,}/g, '/');
 
   try {
-    const ctx = await loadSiteContent();
     const aPath = adminPath();
+
+    /* robots.txt 不依赖任何内容数据，放在连库之前：
+       数据库慢或函数冷启动时，爬虫也必须能及时拿到 robots，
+       否则会被判定为抓取超时（Lighthouse 的 SEO 扣分就来自这里）。 */
+    if (raw === '/robots.txt') {
+      return send(res, 200, 'text/plain; charset=utf-8', buildRobots(aPath), DATA_CACHE);
+    }
+
+    /* 随机冷知已并入 /facts/ 列表页顶部：老链接 301 过去，别让爬虫吃到 404。
+       放在连库之前——它不需要任何内容数据。 */
+    const oldPath = raw.replace(/\?.*$/, '');
+    if (oldPath === '/random/' || oldPath === '/random') {
+      res.setHeader('Location', '/facts/');
+      return send(res, 301, 'text/plain; charset=utf-8', '已移至 /facts/', HTML_CACHE);
+    }
+
+    const ctx = await loadSiteContent();
 
     /* ---------- 管理台（隐藏入口） ---------- */
     if (raw === aPath || raw === aPath.slice(0, -1)) {
@@ -71,9 +87,6 @@ export default async function handler(req, res) {
     }
 
     /* ---------- SEO 文件 ---------- */
-    if (raw === '/robots.txt') {
-      return send(res, 200, 'text/plain; charset=utf-8', buildRobots(aPath), DATA_CACHE);
-    }
     if (raw === '/sitemap.xml') {
       return send(res, 200, 'application/xml; charset=utf-8', buildSitemap(ctx), DATA_CACHE);
     }
@@ -112,7 +125,6 @@ export default async function handler(req, res) {
     if (html === null) {
       if (path === '/feihua/' || path === '/feihua') html = renderFeihua(ctx);
       else if (path === '/jokes/' || path === '/jokes') html = renderJokes(ctx);
-      else if (path === '/random/' || path === '/random') html = renderRandom(ctx);
       else if (path === '/archive/' || path === '/archive') html = renderArchive(ctx);
       else if (path === '/search/' || path === '/search') html = renderSearch(ctx);
       else if (path === '/about/' || path === '/about') html = renderAbout(ctx);
