@@ -1,0 +1,27 @@
+{
+  "name": "sylveris-chunlin-lengzhi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sylveris 春林冷知 — 冷静地知道一点没用的东西",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:static": "node scripts/build.mjs --static",
+    "icons": "node scripts/make-icons.mjs",
+    "dev": "node scripts/serve.mjs",
+    "serve": "node scripts/serve.mjs",
+    "serve:static": "node scripts/serve.mjs --static",
+    "start": "node scripts/serve.mjs",
+    "seed": "node scripts/seed.mjs",
+    "set-password": "node scripts/set-password.mjs",
+    "check": "node scripts/check.mjs",
+    "check:schedule": "node scripts/check-schedule.mjs",
+    "check:security": "node scripts/check-security.mjs"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0"
+  }
+}

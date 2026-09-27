@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Sylveris 春林冷知">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f6452"/>
+      <stop offset="1" stop-color="#365848"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <g fill="#f6f5f0">
+    <path d="M256 96 L326 233 L186 233 Z"/>
+    <path d="M256 156 L346 294 L166 294 Z"/>
+    <path d="M256 219 L366 358 L146 358 Z"/>
+    <rect x="241.6" y="358" width="28.8" height="76" rx="6"/>
+  </g>
+  <g stroke="#a8c5d0" stroke-width="9" stroke-linecap="round">
+    <line x1="343" y1="125" x2="439" y2="125"/>
+    <line x1="391" y1="77" x2="391" y2="173"/>
+    <line x1="357" y1="91" x2="425" y2="159"/>
+    <line x1="425" y1="91" x2="357" y2="159"/>
+  </g>
+  <circle cx="391" cy="125" r="9" fill="#a8c5d0"/>
+</svg>

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "node scripts/build.mjs",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "cleanUrls": true,
+  "trailingSlash": true,
+  "github": {
+    "enabled": true,
+    "autoJobCancelation": true
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/api/render?path=/" },
+    { "source": "/:path((?!api/).*)", "destination": "/api/render?path=/:path" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/(sitemap.xml|rss.xml|robots.txt)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=60, s-maxage=300, stale-while-revalidate=600" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+      ]
+    }
+  ],
+  "redirects": [
+    { "source": "/fact/:slug", "destination": "/facts/:slug/", "permanent": true },
+    { "source": "/joke", "destination": "/jokes/", "permanent": true },
+    { "source": "/feihuawenxue", "destination": "/feihua/", "permanent": true }
+  ]
+}
