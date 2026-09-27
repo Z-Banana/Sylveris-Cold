@@ -12,7 +12,7 @@
   },
   "rewrites": [
     { "source": "/", "destination": "/api/render?path=/" },
-    { "source": "/:path((?!api/).*)", "destination": "/api/render?path=/:path" }
+    { "source": "/:path((?!api/|_vercel/).*)", "destination": "/api/render?path=/:path" }
   ],
   "headers": [
     {

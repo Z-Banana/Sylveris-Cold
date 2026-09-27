@@ -82,6 +82,11 @@ ok('首页含结构化数据 JSON-LD', home.text.includes('application/ld+json')
 ok('首页含 canonical', /rel="canonical"/.test(home.text));
 ok('首页含 og:title', /property="og:title"/.test(home.text));
 ok('首页含导航', home.text.includes('年轮归档'));
+ok(
+  '首页含 Vercel Web Analytics 脚本',
+  /window\.vaq/.test(home.text) && /_vercel\/(insights|analytics)/.test(home.text),
+  home.text.match(/<script defer src="([^"]+)">/)?.[1] || '未找到脚本地址'
+);
 
 // 随机冷知已并入列表页顶部，旧 /random/ 301 跳转
 const factsList = await get('/facts/');
@@ -158,6 +163,7 @@ ok(
   '后台含「访问统计」页签',
   adminPage.text.includes('data-tab="stats"') && adminPage.text.includes('id="ad-tab-stats"')
 );
+ok('后台页不打点（无统计脚本）', !/window\.vaq/.test(adminPage.text));
 
 const noAuth = await get('/api/admin?view=overview');
 ok('未登录访问管理接口 → 401', noAuth.status === 401, `status=${noAuth.status}`);
